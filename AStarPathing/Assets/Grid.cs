@@ -43,6 +43,21 @@ public class Grid : MonoBehaviour
         }
     }
 
+    public Node NodeFromWorldPoint(Vector3 worldPos)
+    {
+        // Convert from point to percentage of how far along the grid it is (Ex: leftmost = 0, halfway = 0.5, rightmost = 1)
+        float percentRow = (worldPos.x + gridWorldSize.x/2) / gridWorldSize.x;
+        float percentCol = (worldPos.z + gridWorldSize.y/2) / gridWorldSize.y;
+        
+        // Clamp to [0, 1]
+        percentRow = Mathf.Clamp01(percentRow);
+        percentCol = Mathf.Clamp01(percentCol);
+        
+        int row = Mathf.RoundToInt((gridRows-1) * percentRow);
+        int col = Mathf.RoundToInt((gridCols-1) * percentCol);
+        return grid[row,col];
+    }
+
     void OnDrawGizmos()
     {
         Gizmos.DrawWireCube(transform.position, new Vector3(gridWorldSize.x, 1f, gridWorldSize.y)); // Z is vertical coordinate
