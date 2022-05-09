@@ -2,13 +2,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Grid : MonoBehaviour
+public class ASGrid : MonoBehaviour
 {
     public LayerMask unwalkableMask;
     public Vector2 gridWorldSize; // corresponds: x ==> x, y ==> z
     public float nodeRadius;
 
-    Node[,] grid;
+    ASNode[,] grid;
     float nodeDiameter;
     int gridRows, gridCols;
 
@@ -24,7 +24,7 @@ public class Grid : MonoBehaviour
         gridRows = Mathf.RoundToInt(gridWorldSize.x / nodeDiameter);
         gridCols = Mathf.RoundToInt(gridWorldSize.y / nodeDiameter);
 
-        grid = new Node[gridRows,gridCols];
+        grid = new ASNode[gridRows,gridCols];
 
         // Go from middle of grid left and down half the size of the grid
         Vector3 worldBottomLeft = transform.position - (Vector3.right * (gridWorldSize.x / 2)) - (Vector3.forward * (gridWorldSize.y / 2));
@@ -39,14 +39,14 @@ public class Grid : MonoBehaviour
                                     Vector3.forward * (col * nodeDiameter + nodeRadius);
 
                 bool walkable = !Physics.CheckSphere(worldPt, nodeRadius, unwalkableMask);
-                grid[row,col] = new Node(walkable, worldPt, row, col);
+                grid[row,col] = new ASNode(walkable, worldPt, row, col);
             }
         }
     }
 
-    public List<Node> GetNeighbors(Node resident)
+    public List<ASNode> GetNeighbors(ASNode resident)
     {
-        List<Node> neighbors = new List<Node>();
+        List<ASNode> neighbors = new List<ASNode>();
         for(int row = -1; row <= 1; ++row)
         {
             for(int col = -1; col <= 1; ++col)
@@ -68,7 +68,7 @@ public class Grid : MonoBehaviour
         return neighbors;
     }
 
-    public Node NodeFromWorldPoint(Vector3 worldPos)
+    public ASNode NodeFromWorldPoint(Vector3 worldPos)
     {
         // Convert from point to percentage of how far along the grid it is (Ex: leftmost = 0, halfway = 0.5, rightmost = 1)
         float percentRow = (worldPos.x + gridWorldSize.x/2) / gridWorldSize.x;
@@ -83,7 +83,7 @@ public class Grid : MonoBehaviour
         return grid[row,col];
     }
 
-    public List<Node> path;
+    public List<ASNode> path;
     void OnDrawGizmos()
     {
         Gizmos.DrawWireCube(transform.position, new Vector3(gridWorldSize.x, 1f, gridWorldSize.y)); // Z is vertical coordinate
@@ -94,7 +94,7 @@ public class Grid : MonoBehaviour
         }
         if(grid != null)
         {
-            foreach(Node n in grid)
+            foreach(ASNode n in grid)
             {
                 Gizmos.color = n.walkable ? Color.white : Color.red;
                 if(path != null)

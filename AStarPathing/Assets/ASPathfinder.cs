@@ -2,16 +2,16 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Pathfinder : MonoBehaviour
+public class ASPathfinder : MonoBehaviour
 {
     public Transform seeker, target;
 
-    Grid grid;
+    ASGrid grid;
 
     void Awake()
     {
         // this and Grid.cs must be on the same game object
-        grid = GetComponent<Grid>();
+        grid = GetComponent<ASGrid>();
     }
 
     void Update()
@@ -21,11 +21,11 @@ public class Pathfinder : MonoBehaviour
 
     void FindPath(Vector3 startPos, Vector3 targetPos)
     {
-        Node startNode = grid.NodeFromWorldPoint(startPos);
-        Node targetNode = grid.NodeFromWorldPoint(targetPos);
+        ASNode startNode = grid.NodeFromWorldPoint(startPos);
+        ASNode targetNode = grid.NodeFromWorldPoint(targetPos);
     
-        List<Node> openSet = new List<Node>();
-        HashSet<Node> closedSet = new HashSet<Node>();
+        List<ASNode> openSet = new List<ASNode>();
+        HashSet<ASNode> closedSet = new HashSet<ASNode>();
 
         openSet.Add(startNode);
 
@@ -40,7 +40,7 @@ public class Pathfinder : MonoBehaviour
             }
 
             // Find the node with the lowest FCost that we haven't gone to yet
-            Node currentNode = openSet[0];
+            ASNode currentNode = openSet[0];
             for(int i = 1; i < openSet.Count; ++i)
             {
                 if(openSet[i].fCost < currentNode.fCost ||                                      // node with the lowest fCost
@@ -61,7 +61,7 @@ public class Pathfinder : MonoBehaviour
             }
 
             // Check all neighbors to see if any are not walkable or already closed
-            foreach(Node neighbor in grid.GetNeighbors(currentNode))
+            foreach(ASNode neighbor in grid.GetNeighbors(currentNode))
             {
                 //Debug.Log("Testing neighbors for grid[" + currentNode.row + "]["+ currentNode.col +"]");
                 // not walkaable or already closed, skip
@@ -88,10 +88,10 @@ public class Pathfinder : MonoBehaviour
         }
     }
 
-    void RetracePath(Node startNode, Node endNode)
+    void RetracePath(ASNode startNode, ASNode endNode)
     {
-        List<Node> path = new List<Node>();
-        Node currentNode = endNode;
+        List<ASNode> path = new List<ASNode>();
+        ASNode currentNode = endNode;
         while(currentNode != startNode)
         {
             path.Add(currentNode);
@@ -126,7 +126,7 @@ public class Pathfinder : MonoBehaviour
         
         Distance = 14a + 10(b-a)
     */
-    int DistanceBetweenNodes(Node n1, Node n2)
+    int DistanceBetweenNodes(ASNode n1, ASNode n2)
     {
         int distX = Mathf.Abs(n2.row - n1.row);
         int distY = Mathf.Abs(n2.col - n1.col);

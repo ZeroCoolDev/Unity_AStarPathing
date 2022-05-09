@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Node
+public class ASNode
 {
     public bool walkable;
     public Vector3 worldPosition;
@@ -10,9 +10,9 @@ public class Node
 
     public int gCost;   // distance from starting node (on the current path)
     public int hCost;   // distance from target node
-    public Node parent; // which node did we come from to this node
+    public ASNode parent; // which node did we come from to this node
 
-    public Node(bool _walkwable, Vector3 _worldPos, int _row, int _col)
+    public ASNode(bool _walkwable, Vector3 _worldPos, int _row, int _col)
     {
         walkable = _walkwable;
         worldPosition = _worldPos;
