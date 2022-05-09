@@ -14,15 +14,16 @@ public class Grid : MonoBehaviour
 
     void Start()
     {
-        // How many nodes can we fit into out grid
-        nodeDiameter = nodeRadius * 2;
-        gridRows = Mathf.RoundToInt(gridWorldSize.x / nodeDiameter);
-        gridCols = Mathf.RoundToInt(gridWorldSize.y / nodeDiameter);
         CreateGrid();
     }
 
     void CreateGrid()
     {
+        // How many nodes can we fit into out grid
+        nodeDiameter = nodeRadius * 2;
+        gridRows = Mathf.RoundToInt(gridWorldSize.x / nodeDiameter);
+        gridCols = Mathf.RoundToInt(gridWorldSize.y / nodeDiameter);
+
         grid = new Node[gridRows,gridCols];
 
         // Go from middle of grid left and down half the size of the grid
@@ -38,9 +39,33 @@ public class Grid : MonoBehaviour
                                     Vector3.forward * (col * nodeDiameter + nodeRadius);
 
                 bool walkable = !Physics.CheckSphere(worldPt, nodeRadius, unwalkableMask);
-                grid[row,col] = new Node(walkable, worldPt);
+                grid[row,col] = new Node(walkable, worldPt, row, col);
             }
         }
+    }
+
+    public List<Node> GetNeighbors(Node resident)
+    {
+        List<Node> neighbors = new List<Node>();
+        for(int row = -1; row <= 1; ++row)
+        {
+            for(int col = -1; col <= 1; ++col)
+            {
+                if(row == 0 && col == 0) { continue; } // don't count the resident as a neighbor to itself
+
+                int checkRow = resident.row + row;
+                int checkCol = resident.col + col;
+
+                // check that this node is in the grid
+                if( checkRow >= 0 && checkRow < gridRows &&
+                    checkCol >= 0 && checkCol < gridCols)
+                {
+                    neighbors.Add(grid[checkRow, checkCol]);
+                }
+            }
+        }
+
+        return neighbors;
     }
 
     public Node NodeFromWorldPoint(Vector3 worldPos)
@@ -58,15 +83,27 @@ public class Grid : MonoBehaviour
         return grid[row,col];
     }
 
+    public List<Node> path;
     void OnDrawGizmos()
     {
         Gizmos.DrawWireCube(transform.position, new Vector3(gridWorldSize.x, 1f, gridWorldSize.y)); // Z is vertical coordinate
 
+        if(grid == null)
+        {
+            CreateGrid();
+        }
         if(grid != null)
         {
             foreach(Node n in grid)
             {
                 Gizmos.color = n.walkable ? Color.white : Color.red;
+                if(path != null)
+                {
+                    if(path.Contains(n))
+                    {
+                        Gizmos.color = Color.cyan;
+                    }
+                }
                 Gizmos.DrawCube(n.worldPosition, Vector3.one * (nodeDiameter - 0.1f));
             }
         }
