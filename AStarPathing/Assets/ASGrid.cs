@@ -19,7 +19,7 @@ public class ASGrid : MonoBehaviour
         }
     }
 
-    void Start()
+    void Awake()
     {
         CreateGrid();
     }
