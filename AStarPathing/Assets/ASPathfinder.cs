@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Diagnostics;
 
 public class ASPathfinder : MonoBehaviour
 {
@@ -16,15 +17,22 @@ public class ASPathfinder : MonoBehaviour
 
     void Update()
     {
-        FindPath(seeker.position, target.position);
+        if(Input.GetButtonDown("Jump"))
+        {
+            FindPath(seeker.position, target.position);
+        }
     }
 
     void FindPath(Vector3 startPos, Vector3 targetPos)
     {
+        Stopwatch sw = new Stopwatch();
+        sw.Start();
+
         ASNode startNode = grid.NodeFromWorldPoint(startPos);
         ASNode targetNode = grid.NodeFromWorldPoint(targetPos);
     
         List<ASNode> openSet = new List<ASNode>();
+        //ASHeap<ASNode> openSet = new ASHeap<ASNode>(grid.MaxSize);
         HashSet<ASNode> closedSet = new HashSet<ASNode>();
 
         openSet.Add(startNode);
@@ -35,7 +43,7 @@ public class ASPathfinder : MonoBehaviour
             --failsafe;
             if(failsafe <= 0 )
             {
-                Debug.Log("ERROR: Failsafe hit, infinite loop detected");
+                UnityEngine.Debug.Log("ERROR: Failsafe hit, infinite loop detected");
                 return;
             }
 
@@ -56,6 +64,8 @@ public class ASPathfinder : MonoBehaviour
 
             if(currentNode == targetNode)// path has been found 
             { 
+                sw.Stop();
+                UnityEngine.Debug.Log("Path found: " + sw.ElapsedMilliseconds + "ms");
                 RetracePath(startNode, targetNode);
                 return; 
             }
@@ -63,7 +73,7 @@ public class ASPathfinder : MonoBehaviour
             // Check all neighbors to see if any are not walkable or already closed
             foreach(ASNode neighbor in grid.GetNeighbors(currentNode))
             {
-                //Debug.Log("Testing neighbors for grid[" + currentNode.row + "]["+ currentNode.col +"]");
+                //UnityEngine.Debug.Log("Testing neighbors for grid[" + currentNode.row + "]["+ currentNode.col +"]");
                 // not walkaable or already closed, skip
                 if(!neighbor.walkable || closedSet.Contains(neighbor)) { continue; }
 

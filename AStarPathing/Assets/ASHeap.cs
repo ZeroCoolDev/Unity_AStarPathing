@@ -25,7 +25,69 @@ public class Heap<T> where T : IHeapItem<T>
         item.HeapIndex = currentItemCount;
         items[currentItemCount] = item;
         SortUp(item);
-        currentItemCount++;
+        ++currentItemCount;
+    }
+
+    public T RemoveFirst()
+    {
+        T firstItem = items[0];
+        --currentItemCount;
+        items[0] = items[currentItemCount];
+        items[0].HeapIndex = 0;
+        SortDown(items[0]);
+        return firstItem;
+    }
+
+    public void UpdateItem(T item)
+    {
+        // When pathfinding we will only ever increase the priority, never decrease
+        SortUp(item);
+    }
+
+    public int Count{
+        get {
+            return currentItemCount;
+        }
+    }
+
+    bool Contains(T item)
+    {
+        return Equals(items[item.HeapIndex], item);
+    }
+
+    void SortDown(T item)
+    {
+        while(true)
+        {
+            int leftChildIndex = (item.HeapIndex * 2) + 1;
+            int rightChildIndex = (item.HeapIndex * 2) + 2;
+
+            int swapIndex = 0;
+            if(leftChildIndex < currentItemCount)
+            {
+                swapIndex = leftChildIndex; // default to left child if there is one
+                if(rightChildIndex < currentItemCount)
+                {
+                    if(items[leftChildIndex].CompareTo(items[rightChildIndex]) < 0) // the right child is bigger
+                    {
+                        swapIndex = rightChildIndex;
+                    }
+                }
+
+                if(item.CompareTo(items[swapIndex]) < 0)
+                {
+                    Swap(item, items[swapIndex]);
+                }
+                else
+                { // parent is less than it's highest child so it's in the correct spot
+                    break;
+                }
+            }
+            else
+            { // parent has no children so already in the correct spot
+                break;
+            }
+        }
     }
 
     // Move the item up then heap
