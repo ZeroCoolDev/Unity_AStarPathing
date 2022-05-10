@@ -41,12 +41,20 @@ public class ASNode : IHeapItem<ASNode>
     // returns 1 if this item has a higher priority than comparator (this item's fcost or hcost is lower than comparator)
     public int CompareTo(ASNode comparator)
     {
-        int compare = fCost.CompareTo(comparator.fCost); // -1 if this items is higher prio
+        /*
+            A.CompareTo(B) returns
+                 1 if A > B
+                -1 if A < B
+                 0 if A == B
+        */
+        // The lower f(h)cost is better 
+        int compare = fCost.CompareTo(comparator.fCost); // compare = -1 if this.fcost < comparator.fcost
         if(compare == 0)
         {
-            compare = hCost.CompareTo(comparator.hCost); // -1 if this item is higher prio
+            compare = hCost.CompareTo(comparator.hCost); // compare = -1 if this.hcost < comparator.hcost
         }
 
-        return -compare; // negate to return 1 for indicating this item is higher prio
+        // -1 if this node has a better path than comparator so negate to return 1 for better path
+        return -compare;
     }
 }

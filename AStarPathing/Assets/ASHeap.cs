@@ -10,12 +10,12 @@ using UnityEngine;
     A.leftChild  =   (A.index * 2) + 1 
     A.rightChild =   (A.index * 2) + 2
 */
-public class Heap<T> where T : IHeapItem<T>
+public class ASHeap<T> where T : IHeapItem<T>
 {
     T[] items;
     int currentItemCount;
 
-    public Heap(int maxHeapSize)
+    public ASHeap(int maxHeapSize)
     {
         items = new T[maxHeapSize];
     }
@@ -50,42 +50,49 @@ public class Heap<T> where T : IHeapItem<T>
         }
     }
 
-    bool Contains(T item)
+    public bool Contains(T item)
     {
         return Equals(items[item.HeapIndex], item);
     }
 
     void SortDown(T item)
     {
+        int failsafe = 900;
         while(true)
         {
+            if(--failsafe < 0)
+            {
+                Debug.Log("SortDown Failsafe Triggered - Infinite loop detected");
+                return;
+            }
             int leftChildIndex = (item.HeapIndex * 2) + 1;
             int rightChildIndex = (item.HeapIndex * 2) + 2;
 
             int swapIndex = 0;
+            // Get the smallest child of the two
             if(leftChildIndex < currentItemCount)
             {
                 swapIndex = leftChildIndex; // default to left child if there is one
                 if(rightChildIndex < currentItemCount)
                 {
-                    if(items[leftChildIndex].CompareTo(items[rightChildIndex]) < 0) // the right child is bigger
+                    if(items[leftChildIndex].CompareTo(items[rightChildIndex]) < 0) // the left childs fcost is greater than the right child
                     {
                         swapIndex = rightChildIndex;
                     }
                 }
 
-                if(item.CompareTo(items[swapIndex]) < 0)
+                if(item.CompareTo(items[swapIndex]) < 0) // this item has a larger fcost than the lowest child so swap
                 {
                     Swap(item, items[swapIndex]);
                 }
                 else
                 { // parent is less than it's highest child so it's in the correct spot
-                    break;
+                    return;
                 }
             }
             else
             { // parent has no children so already in the correct spot
-                break;
+                return;
             }
         }
     }
@@ -95,16 +102,16 @@ public class Heap<T> where T : IHeapItem<T>
     {
         int parentIndex = (item.HeapIndex-1)/2;
 
+        int failsafe = 900;
         while(true)
         {
+            if(--failsafe < 0)
+            {
+                Debug.Log("SortUp Failsafe Triggered - Infinite loop detected");
+                return;
+            }
             T parentItem = items[parentIndex];
-            /*
-                A.CompareTo(B) returns
-                     1 if B > A
-                    -1 if B < A
-                     0 if B == A
-            */
-            if(item.CompareTo(parentItem) > 0)
+            if(item.CompareTo(parentItem) > 0) // this means item's fcost is smaller than parent's fcost
             {
                 Swap(item, parentItem);
             }
@@ -122,7 +129,7 @@ public class Heap<T> where T : IHeapItem<T>
 
         int itemAIndex = itemA.HeapIndex;
         itemA.HeapIndex = itemB.HeapIndex;
-        itemB.HeapIndex = itemA.HeapIndex;
+        itemB.HeapIndex = itemAIndex;
     }
 }
 

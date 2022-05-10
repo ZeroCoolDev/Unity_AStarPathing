@@ -17,10 +17,7 @@ public class ASPathfinder : MonoBehaviour
 
     void Update()
     {
-        if(Input.GetButtonDown("Jump"))
-        {
-            FindPath(seeker.position, target.position);
-        }
+        FindPath(seeker.position, target.position);
     }
 
     void FindPath(Vector3 startPos, Vector3 targetPos)
@@ -31,8 +28,7 @@ public class ASPathfinder : MonoBehaviour
         ASNode startNode = grid.NodeFromWorldPoint(startPos);
         ASNode targetNode = grid.NodeFromWorldPoint(targetPos);
     
-        List<ASNode> openSet = new List<ASNode>();
-        //ASHeap<ASNode> openSet = new ASHeap<ASNode>(grid.MaxSize);
+        ASHeap<ASNode> openSet = new ASHeap<ASNode>(grid.MaxSize);
         HashSet<ASNode> closedSet = new HashSet<ASNode>();
 
         openSet.Add(startNode);
@@ -48,18 +44,7 @@ public class ASPathfinder : MonoBehaviour
             }
 
             // Find the node with the lowest FCost that we haven't gone to yet
-            ASNode currentNode = openSet[0];
-            for(int i = 1; i < openSet.Count; ++i)
-            {
-                if(openSet[i].fCost < currentNode.fCost ||                                      // node with the lowest fCost
-                openSet[i].fCost == currentNode.fCost && openSet[i].hCost == currentNode.hCost)   // or closest to target
-                {
-                    currentNode = openSet[i];
-                }
-            }
-
-            // Once we find it that becomes the new current we start pathing from
-            openSet.Remove(currentNode);
+            ASNode currentNode = openSet.RemoveFirst();
             closedSet.Add(currentNode);
 
             if(currentNode == targetNode)// path has been found 
