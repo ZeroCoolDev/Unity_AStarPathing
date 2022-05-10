@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class ASGrid : MonoBehaviour
 {
-    public bool bOblyDisplayPathGizmos;
+    public bool bDisplayGridGizmos;
     public LayerMask unwalkableMask;
     public Vector2 gridWorldSize; // corresponds: x ==> x, y ==> z
     public float nodeRadius;
@@ -90,43 +90,21 @@ public class ASGrid : MonoBehaviour
         return grid[row,col];
     }
 
-    public List<ASNode> path;
     void OnDrawGizmos()
     {
         Gizmos.DrawWireCube(transform.position, new Vector3(gridWorldSize.x, 1f, gridWorldSize.y)); // Z is vertical coordinate
-        if(bOblyDisplayPathGizmos)
+
+        if(grid == null)
         {
-            if(path != null)
-            {
-                foreach(ASNode n in path)
-                {
-                    Gizmos.color = Color.cyan;
-                    Gizmos.DrawCube(n.worldPosition, Vector3.one * (nodeDiameter - 0.1f));
-                }
-            }
+            CreateGrid();
         }
-        else
+        if(grid != null && bDisplayGridGizmos)
         {
-            if(grid == null)
+            foreach(ASNode n in grid)
             {
-                CreateGrid();
-            }
-            if(grid != null)
-            {
-                foreach(ASNode n in grid)
-                {
-                    Gizmos.color = n.walkable ? Color.white : Color.red;
-                    if(path != null)
-                    {
-                        if(path.Contains(n))
-                        {
-                            Gizmos.color = Color.cyan;
-                        }
-                    }
-                    Gizmos.DrawCube(n.worldPosition, Vector3.one * (nodeDiameter - 0.1f));
-                }
+                Gizmos.color = n.bWalkable ? Color.white : Color.red;
+                Gizmos.DrawCube(n.worldPosition, Vector3.one * (nodeDiameter - 0.1f));
             }
         }
     }
-
 }

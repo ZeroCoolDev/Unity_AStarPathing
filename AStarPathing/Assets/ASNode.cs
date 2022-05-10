@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class ASNode : IHeapItem<ASNode>
 {
-    public bool walkable;
+    public bool bWalkable;
     public Vector3 worldPosition;
     public int row, col; // position in the grid
 
@@ -15,7 +15,7 @@ public class ASNode : IHeapItem<ASNode>
 
     public ASNode(bool _walkwable, Vector3 _worldPos, int _row, int _col)
     {
-        walkable = _walkwable;
+        bWalkable = _walkwable;
         worldPosition = _worldPos;
         row = _row;
         col = _col;

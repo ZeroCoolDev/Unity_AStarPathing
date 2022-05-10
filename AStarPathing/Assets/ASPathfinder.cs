@@ -2,26 +2,39 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Diagnostics;
+using System;
 
 public class ASPathfinder : MonoBehaviour
 {
-    public Transform seeker, target;
+// deprecated but keeping for now
+//    public Transform seeker, target;
 
+    ASRequestPathManager requestManager;
     ASGrid grid;
 
     void Awake()
     {
         // this and Grid.cs must be on the same game object
         grid = GetComponent<ASGrid>();
+        requestManager = GetComponent<ASRequestPathManager>();
     }
 
-    void Update()
+// deprecated but keeping for now
+    // void Update()
+    // {
+    //     FindPath(seeker.position, target.position);
+    // }
+
+    public void StartFindPath(Vector3 startPos, Vector3 targetPos)
     {
-        FindPath(seeker.position, target.position);
+        StartCoroutine(FindPath(startPos, targetPos));
     }
 
-    void FindPath(Vector3 startPos, Vector3 targetPos)
+    IEnumerator FindPath(Vector3 startPos, Vector3 targetPos)
     {
+        Vector3[] waypoints = new Vector3[0];
+        bool bPathSuccess = false;
+
         Stopwatch sw = new Stopwatch();
         sw.Start();
 
@@ -29,61 +42,71 @@ public class ASPathfinder : MonoBehaviour
         ASNode targetNode = grid.NodeFromWorldPoint(targetPos);
     
         ASHeap<ASNode> openSet = new ASHeap<ASNode>(grid.MaxSize);
+        openSet.Add(startNode);
         HashSet<ASNode> closedSet = new HashSet<ASNode>();
 
-        openSet.Add(startNode);
-
-        int failsafe = Mathf.RoundToInt(grid.gridWorldSize.x * grid.gridWorldSize.y * 2);
-        while(openSet.Count > 0)
+        // There is no possible path if either are unwalkwable
+        if(startNode.bWalkable && targetNode.bWalkable)
         {
-            --failsafe;
-            if(failsafe <= 0 )
+            int failsafe = Mathf.RoundToInt(grid.gridWorldSize.x * grid.gridWorldSize.y * 2);
+            while(openSet.Count > 0)
             {
-                UnityEngine.Debug.Log("ERROR: Failsafe hit, infinite loop detected");
-                return;
-            }
-
-            // Find the node with the lowest FCost that we haven't gone to yet
-            ASNode currentNode = openSet.RemoveFirst();
-            closedSet.Add(currentNode);
-
-            if(currentNode == targetNode)// path has been found 
-            { 
-                sw.Stop();
-                UnityEngine.Debug.Log("Path found: " + sw.ElapsedMilliseconds + "ms");
-                RetracePath(startNode, targetNode);
-                return; 
-            }
-
-            // Check all neighbors to see if any are not walkable or already closed
-            foreach(ASNode neighbor in grid.GetNeighbors(currentNode))
-            {
-                //UnityEngine.Debug.Log("Testing neighbors for grid[" + currentNode.row + "]["+ currentNode.col +"]");
-                // not walkaable or already closed, skip
-                if(!neighbor.walkable || closedSet.Contains(neighbor)) { continue; }
-
-                // Check if our 
-                //      current path -> neighbor is shorter than 
-                //      path from start -> neighbor (neighbor.gCost)
-                // IF so, that means the this neighbor has a better path
-                int costFromCurrentToNeighbor = currentNode.gCost + DistanceBetweenNodes(currentNode, neighbor);
-                if(costFromCurrentToNeighbor < neighbor.gCost || !openSet.Contains(neighbor))
+                --failsafe;
+                if(failsafe <= 0 )
                 {
-                    // Our current path is the best, update the neighbor's gCost and hCost
-                    neighbor.gCost = costFromCurrentToNeighbor;
-                    neighbor.hCost = DistanceBetweenNodes(neighbor, targetNode);
-                    neighbor.parent = currentNode;
+                    UnityEngine.Debug.Log("ERROR: Failsafe hit, infinite loop detected");
+                    bPathSuccess = false;
+                    break;
+                }
 
-                    if(!openSet.Contains(neighbor))
+                // Find the node with the lowest FCost that we haven't gone to yet
+                ASNode currentNode = openSet.RemoveFirst();
+                closedSet.Add(currentNode);
+
+                if(currentNode == targetNode)// path has been found 
+                { 
+                    sw.Stop();
+                    //UnityEngine.Debug.Log("Path found: " + sw.ElapsedMilliseconds + "ms");
+                    bPathSuccess = true;
+                    break; 
+                }
+
+                // Check all neighbors to see if any are not walkable or already closed
+                foreach(ASNode neighbor in grid.GetNeighbors(currentNode))
+                {
+                    //UnityEngine.Debug.Log("Testing neighbors for grid[" + currentNode.row + "]["+ currentNode.col +"]");
+                    // not walkaable or already closed, skip
+                    if(!neighbor.bWalkable || closedSet.Contains(neighbor)) { continue; }
+
+                    // Check if our 
+                    //      current path -> neighbor is shorter than 
+                    //      path from start -> neighbor (neighbor.gCost)
+                    // IF so, that means the this neighbor has a better path
+                    int costFromCurrentToNeighbor = currentNode.gCost + DistanceBetweenNodes(currentNode, neighbor);
+                    if(costFromCurrentToNeighbor < neighbor.gCost || !openSet.Contains(neighbor))
                     {
-                        openSet.Add(neighbor);
+                        // Our current path is the best, update the neighbor's gCost and hCost
+                        neighbor.gCost = costFromCurrentToNeighbor;
+                        neighbor.hCost = DistanceBetweenNodes(neighbor, targetNode);
+                        neighbor.parent = currentNode;
+
+                        if(!openSet.Contains(neighbor))
+                        {
+                            openSet.Add(neighbor);
+                        }
                     }
                 }
             }
         }
+        yield return null; // wait for 1 frame before returning
+        if(bPathSuccess)
+        {
+            waypoints = RetracePath(startNode, targetNode);
+        }
+        requestManager.FinishedProcessingPath(waypoints, bPathSuccess);
     }
 
-    void RetracePath(ASNode startNode, ASNode endNode)
+    Vector3[] RetracePath(ASNode startNode, ASNode endNode)
     {
         List<ASNode> path = new List<ASNode>();
         ASNode currentNode = endNode;
@@ -92,9 +115,28 @@ public class ASPathfinder : MonoBehaviour
             path.Add(currentNode);
             currentNode = currentNode.parent;
         }
-        path.Reverse();
+        Vector3[] waypoints = SimplifyPath(path);
+        Array.Reverse(waypoints);
+        return waypoints;
+    }
 
-        grid.path = path;
+    // Only create waypoints along the path that actually change in direction
+    Vector3[] SimplifyPath(List<ASNode> path)
+    {
+        List<Vector3> waypoints = new List<Vector3>();
+        Vector2 directionOld = Vector2.zero;
+        for(int i = 1; i < path.Count; ++i)
+        {
+            int dx = path[i-1].row - path[i].row;
+            int dy = path[i-1].col - path[i].col;
+            Vector2 directionNew = new Vector2(dx, dy);
+            if(directionNew != directionOld)// we've changed direction!
+            {
+                waypoints.Add(path[i].worldPosition);
+            }
+            directionOld = directionNew;
+        }
+        return waypoints.ToArray();
     }
 
     /*
