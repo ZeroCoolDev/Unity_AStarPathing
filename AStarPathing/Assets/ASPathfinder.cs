@@ -94,6 +94,10 @@ public class ASPathfinder : MonoBehaviour
                         {
                             openSet.Add(neighbor);
                         }
+                        else
+                        {
+                            openSet.UpdateItem(neighbor);
+                        }
                     }
                 }
             }
