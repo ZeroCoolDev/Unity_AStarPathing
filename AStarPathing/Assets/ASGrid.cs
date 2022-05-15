@@ -8,6 +8,9 @@ public class ASGrid : MonoBehaviour
     public LayerMask unwalkableMask;
     public Vector2 gridWorldSize; // corresponds: x ==> x, y ==> z
     public float nodeRadius;
+    public TerrainType[] walkableRegions;
+    LayerMask walkableMask; // contains all the layers in the walkableRegions
+    Dictionary<int,int> walkableRegionsMap = new Dictionary<int, int>(); // keyed off index in the layermask array. Value is terrian penalty for that layer
 
     ASNode[,] grid;
     float nodeDiameter;
@@ -21,6 +24,14 @@ public class ASGrid : MonoBehaviour
 
     void Awake()
     {
+        foreach(TerrainType region in walkableRegions)
+        {
+            walkableMask.value |= region.terrainMask.value;
+
+            int layermaskArrayIndex = (int)Mathf.Log(region.terrainMask.value, 2);
+            walkableRegionsMap.Add(layermaskArrayIndex, region.terrainPenalty);
+        }
+
         CreateGrid();
     }
 
@@ -46,7 +57,19 @@ public class ASGrid : MonoBehaviour
                                     Vector3.forward * (col * nodeDiameter + nodeRadius);
 
                 bool walkable = !Physics.CheckSphere(worldPt, nodeRadius, unwalkableMask);
-                grid[row,col] = new ASNode(walkable, worldPt, row, col);
+
+                int movementPenalty = 0;
+                // raycast to find the layer
+                if(walkable)
+                {
+                    Ray ray = new Ray(worldPt + Vector3.up * 50, Vector3.down); // fire a ray straight down from a 'little bit' above the ground
+                    RaycastHit hit;
+                    if(Physics.Raycast(ray, out hit, 100 /*incase terrain dips*/, walkableMask))
+                    {
+                        walkableRegionsMap.TryGetValue(hit.collider.gameObject.layer, out movementPenalty);   
+                    }
+                }
+                grid[row,col] = new ASNode(walkable, worldPt, row, col, movementPenalty);
             }
         }
     }
@@ -106,5 +129,12 @@ public class ASGrid : MonoBehaviour
                 Gizmos.DrawCube(n.worldPosition, Vector3.one * (nodeDiameter - 0.1f));
             }
         }
+    }
+
+    [System.Serializable]
+    public class TerrainType
+    {
+        public LayerMask terrainMask;
+        public int terrainPenalty;
     }
 }

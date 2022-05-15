@@ -82,7 +82,7 @@ public class ASPathfinder : MonoBehaviour
                     //      current path -> neighbor is shorter than 
                     //      path from start -> neighbor (neighbor.gCost)
                     // IF so, that means the this neighbor has a better path
-                    int costFromCurrentToNeighbor = currentNode.gCost + DistanceBetweenNodes(currentNode, neighbor);
+                    int costFromCurrentToNeighbor = currentNode.gCost + DistanceBetweenNodes(currentNode, neighbor) + neighbor.movementPenalty;
                     if(costFromCurrentToNeighbor < neighbor.gCost || !openSet.Contains(neighbor))
                     {
                         // Our current path is the best, update the neighbor's gCost and hCost
