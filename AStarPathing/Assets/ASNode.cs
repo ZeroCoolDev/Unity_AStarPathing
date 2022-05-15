@@ -7,18 +7,20 @@ public class ASNode : IHeapItem<ASNode>
     public bool bWalkable;
     public Vector3 worldPosition;
     public int row, col; // position in the grid
+    public int movementPenalty;
 
     public int gCost;   // distance from starting node (on the current path)
     public int hCost;   // distance from target node
     public ASNode parent; // which node did we come from to this node
     int heapIndex;
 
-    public ASNode(bool _walkwable, Vector3 _worldPos, int _row, int _col)
+    public ASNode(bool _walkwable, Vector3 _worldPos, int _row, int _col, int _movePenalty)
     {
         bWalkable = _walkwable;
         worldPosition = _worldPos;
         row = _row;
         col = _col;
+        movementPenalty = _movePenalty;
     }
 
     // No one can ever assign the fCost, it is always calculated from g & h costs
