@@ -9,6 +9,7 @@ public class ASGrid : MonoBehaviour
     public Vector2 gridWorldSize; // corresponds: x ==> x, y ==> z
     public float nodeRadius;
     public TerrainType[] walkableRegions;
+    public int obstacleProximityPenalty = 10; // how close we want to allow players to get to unwalkable objects
     LayerMask walkableMask; // contains all the layers in the walkableRegions
     Dictionary<int,int> walkableRegionsMap = new Dictionary<int, int>(); // keyed off index in the layermask array. Value is terrian penalty for that layer
 
@@ -16,6 +17,7 @@ public class ASGrid : MonoBehaviour
     float nodeDiameter;
     int gridRows, gridCols;
 
+    // Used for visualization of the blurred grid
     int penaltyMin = int.MaxValue;
     int penaltyMax = int.MinValue;
 
@@ -63,15 +65,18 @@ public class ASGrid : MonoBehaviour
 
                 int movementPenalty = 0;
                 // raycast to find the layer
-                if(walkable)
+                Ray ray = new Ray(worldPt + Vector3.up * 50, Vector3.down); // fire a ray straight down from a 'little bit' above the ground
+                RaycastHit hit;
+                if(Physics.Raycast(ray, out hit, 100 /*incase terrain dips*/, walkableMask))
                 {
-                    Ray ray = new Ray(worldPt + Vector3.up * 50, Vector3.down); // fire a ray straight down from a 'little bit' above the ground
-                    RaycastHit hit;
-                    if(Physics.Raycast(ray, out hit, 100 /*incase terrain dips*/, walkableMask))
-                    {
-                        walkableRegionsMap.TryGetValue(hit.collider.gameObject.layer, out movementPenalty);   
-                    }
+                    walkableRegionsMap.TryGetValue(hit.collider.gameObject.layer, out movementPenalty);   
                 }
+
+                if(!walkable)
+                {
+                    movementPenalty += obstacleProximityPenalty;
+                }
+
                 grid[row,col] = new ASNode(walkable, worldPt, row, col, movementPenalty);
             }
         }
@@ -124,6 +129,9 @@ public class ASGrid : MonoBehaviour
                 int sampleRow = Mathf.Clamp(row, 0, kernalExtends);
                 penaltiesVerticalPass[0,col] += penaltiesHorizontalPass[sampleRow, col]; // update the first node which is the given column, and row 0
             }
+            // Assigns the move penalty for the first row (since below forloop starts at 1)
+            int blurredPenalty = Mathf.RoundToInt((float)penaltiesVerticalPass[0,col] / (kernalSize * kernalSize)); // round to nearest int instead of always rounding down
+            grid[0,col].movementPenalty = blurredPenalty;
 
             for(int row = 1; row < gridRows; ++row)
             {
@@ -132,7 +140,7 @@ public class ASGrid : MonoBehaviour
                 
                 // Remove the previous upper most, and add the new bottom
                 penaltiesVerticalPass[row,col] = penaltiesVerticalPass[row-1, col] - penaltiesHorizontalPass[removeRow, col] + penaltiesHorizontalPass[addRow, col];
-                int blurredPenalty = Mathf.RoundToInt((float)penaltiesVerticalPass[row, col] / (kernalSize * kernalSize)); // round to nearest int instead of always rounding down
+                blurredPenalty = Mathf.RoundToInt((float)penaltiesVerticalPass[row, col] / (kernalSize * kernalSize)); // round to nearest int instead of always rounding down
                 grid[row, col].movementPenalty = blurredPenalty;
 
                 if(blurredPenalty > penaltyMax)
