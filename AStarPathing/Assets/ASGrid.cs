@@ -72,6 +72,67 @@ public class ASGrid : MonoBehaviour
                 grid[row,col] = new ASNode(walkable, worldPt, row, col, movementPenalty);
             }
         }
+
+        BlurPenaltyMap(3);
+    }
+
+    /*
+        Uses Box Blur to smooth out values
+    */
+    void BlurPenaltyMap(int blurSize)
+    {
+        int kernalSize = blurSize * 2 + 1; // must be odd number
+        int kernalExtends = (kernalSize - 1) / 2;//how many squares are there between the central square and the edge of the kernal
+    
+        // contains kernal vals for each direction.
+        int[,] penaltiesHorizontalPass  = new int[gridRows,gridCols];
+        int[,] penaltiesVerticalPass  = new int[gridRows,gridCols];
+
+        // traverse each row's columns [col1] -> [col2]
+        for(int row = 0; row < gridRows; ++row)
+        {
+            // the first node in each row needs to fill in the space outside the grid
+            // Achieve this by just duplicating the first node
+            for(int col = -kernalExtends; col <= kernalExtends; ++col)
+            {
+                int sampleCol = Mathf.Clamp(col, 0, kernalExtends);
+                penaltiesHorizontalPass[row, 0] += grid[row, sampleCol].movementPenalty; // update the first node which is in the row given, and column 0
+            }
+
+            for(int col = 1; col < gridCols; ++col)
+            {
+                int removeCol = Mathf.Clamp(col - kernalExtends - 1, 0, gridCols-1);
+                int addCol = Mathf.Clamp(col + kernalExtends, 0, gridCols-1);
+                
+                // Remove the previous left most, and add the new right
+                penaltiesHorizontalPass[row,col] = penaltiesHorizontalPass[row, col-1] - grid[row, removeCol].movementPenalty + grid[row, addCol].movementPenalty;
+            }
+        }
+
+        // traverse each column's rows [row1]
+        //                              v
+        //                             [row2]
+        for(int col = 0; col < gridCols; ++col)
+        {
+            // the first node in each row needs to fill in the space outside the grid
+            // Achieve this by just duplicating the first node
+            for(int row = -kernalExtends; row <= kernalExtends; ++row)
+            {
+                int sampleRow = Mathf.Clamp(row, 0, kernalExtends);
+                penaltiesVerticalPass[0,col] += penaltiesHorizontalPass[sampleRow, col]; // update the first node which is the given column, and row 0
+            }
+
+            for(int row = 1; row < gridRows; ++row)
+            {
+                int removeRow = Mathf.Clamp(row - kernalExtends - 1, 0, gridRows-1);
+                int addRow = Mathf.Clamp(row + kernalExtends, 0, gridRows-1);
+                
+                // Remove the previous upper most, and add the new bottom
+                penaltiesVerticalPass[row,col] = penaltiesVerticalPass[row-1, col] - penaltiesHorizontalPass[removeRow, col] + penaltiesHorizontalPass[addRow, col];
+                int blurredPenalty = Mathf.RoundToInt((float)penaltiesVerticalPass[row, col] / (kernalSize * kernalSize)); // round to nearest int instead of always rounding down
+                grid[row, col].movementPenalty = blurredPenalty;
+            }
+        }
     }
 
     public List<ASNode> GetNeighbors(ASNode resident)
