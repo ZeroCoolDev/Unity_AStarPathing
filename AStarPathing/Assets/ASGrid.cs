@@ -16,6 +16,9 @@ public class ASGrid : MonoBehaviour
     float nodeDiameter;
     int gridRows, gridCols;
 
+    int penaltyMin = int.MaxValue;
+    int penaltyMax = int.MinValue;
+
     public int MaxSize {
         get {
             return gridRows * gridCols;
@@ -131,6 +134,15 @@ public class ASGrid : MonoBehaviour
                 penaltiesVerticalPass[row,col] = penaltiesVerticalPass[row-1, col] - penaltiesHorizontalPass[removeRow, col] + penaltiesHorizontalPass[addRow, col];
                 int blurredPenalty = Mathf.RoundToInt((float)penaltiesVerticalPass[row, col] / (kernalSize * kernalSize)); // round to nearest int instead of always rounding down
                 grid[row, col].movementPenalty = blurredPenalty;
+
+                if(blurredPenalty > penaltyMax)
+                {
+                    penaltyMax = blurredPenalty;
+                }
+                if(blurredPenalty < penaltyMin)
+                {
+                    penaltyMin = blurredPenalty;
+                }
             }
         }
     }
@@ -186,8 +198,12 @@ public class ASGrid : MonoBehaviour
         {
             foreach(ASNode n in grid)
             {
-                Gizmos.color = n.bWalkable ? Color.white : Color.red;
-                Gizmos.DrawCube(n.worldPosition, Vector3.one * (nodeDiameter - 0.1f));
+                // create a color between white and black based off the nodes move penalty.
+                // 0 = white
+                // 1 = black
+                Gizmos.color = Color.Lerp(Color.white, Color.black, Mathf.InverseLerp(penaltyMin, penaltyMax, n.movementPenalty));
+                Gizmos.color = n.bWalkable ? Gizmos.color : Color.red;
+                Gizmos.DrawCube(n.worldPosition, Vector3.one * nodeDiameter);
             }
         }
     }
